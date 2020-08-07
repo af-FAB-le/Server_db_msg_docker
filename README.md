@@ -7,6 +7,7 @@
     **ssh access** in container to modify influx <-> mqtt bridge
     **sftp access** in container to access local persistent storage
 
+**See intall.md** for the docker installation
 **See Blog post:** [http://nilhcem.com/iot/home-monitoring-with-mqtt-influxdb-grafana](http://nilhcem.com/iot/home-monitoring-with-mqtt-influxdb-grafana)  
 
 

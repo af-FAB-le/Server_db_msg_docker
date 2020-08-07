@@ -1,0 +1,2 @@
+influxdb==5.2.1
+eclipse-mosquitto==1.5

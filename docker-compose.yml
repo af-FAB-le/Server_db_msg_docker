@@ -1,0 +1,90 @@
+version: '3'
+
+services:
+  dokuwiki: 
+    image: bitnami/dokuwiki:latest
+    container_name: dokuwiki
+    ports: 
+      - '8181:80'
+      - '8143:443'
+    volumes:
+      - ${DATA_DIR}/dokuwiki:/bitnami/dokuwiki
+  mosquitto:
+    image: eclipse-mosquitto:1.5
+    container_name: mosquitto
+    ports:
+      - '1883:1883'
+    volumes:
+      - ./01-mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./01-mosquitto/users:/mosquitto/config/users
+      - ${DATA_DIR}/mosquitto/data:/mosquitto/data
+      - ${DATA_DIR}/mosquitto/log:/mosquitto/log
+    restart: always
+  influxdb:
+    image: influxdb:1.7
+    container_name: influxdb
+    ports:
+      - '8086:8086'
+    volumes:
+      - ${DATA_DIR}/influxdb:/var/lib/influxdb
+    restart: always
+  grafana:
+    image: grafana/grafana:5.4.3
+    container_name: grafana
+    depends_on:
+      - influxdb
+    ports:
+      - '3000:3000'
+    volumes:
+      - ${DATA_DIR}/grafana:/var/lib/grafana
+    restart: always
+  mqttbridge:
+    build: ./02-bridge
+    image: nilhcem/mqttbridge
+    container_name: mqttbridge
+    depends_on:
+      - mosquitto
+      - influxdb
+    restart: always
+  sshd_python:
+    build: ./06-ssh-python
+    image: sshd_python
+    container_name: sshd_python
+    privileged: true
+    depends_on:
+      - mosquitto
+      - influxdb
+    ports:
+      - '8899:22'
+      - '1884:1884'
+    restart: always
+    volumes:
+#      - ./06-ssh-python/env/.bashrc:/home/clara/.bashrc
+#      - ./06-ssh-python/env/.profile:/home/clara/.profile
+#      - ./02-bridge/main.py:/home/clara/examples/main.py
+#      - ${DATA_DIR}/sshd_python:/var/lib/affable/sshd_python
+#-    - ${DATA_DIR}/sshd_python/passwd:/etc/passwd
+#     - ${DATA_DIR}/sshd_python/group:/etc/group
+#     - ${DATA_DIR}/sshd_python/shadow:/etc/shadow
+#     - ${DATA_DIR}/sshd_python/gshadow:/etc/gshadow
+      - ${DATA_DIR}/sshd_python/logs:/var/log
+      - ${DATA_DIR}/sshd_python/root_mounts/home:/home
+      - ${DATA_DIR}/sshd_python/root_mounts/etc:/etc
+      - ${DATA_DIR}/sshd_python/root_mounts/var_lib_systemd:/var/lib/systemd 
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    restart: always
+  sftp:
+    build: ./07-sftp
+    image: atmoz/sftp
+    container_name: sftp
+    volumes:
+        - ${DATA_DIR}/sftp/upload:/home/clara
+        - ${DATA_DIR}/sftp/users.conf:/etc/sftp/users.conf
+    ports:
+        - "2222:22"
+    command: clara:affable808!:1000
+#volumes:
+    # Data persistency
+    # sudo mkdir -p /srv/docker/grafana/data; chown 472:472 /srv/docker/grafana/data
+#      - ./app:/app
+
